@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Café Cible - Le Jeu du lancer de café</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Lobster&display=swap');
+  body {
+        font-family: 'Montserrat', sans-serif;
+        background-color: #0f172a;
+        overflow: hidden;
+        touch-action: manipulation;
+        user-select: none;
+    }
+
+    .title {
+        font-family: 'Lobster', cursive;
+    }
+
+    .coffee-bean {
+        width: 20px;
+        height: 30px;
+        background-color: #5d4037;
+        border-radius: 50%;
+        position: absolute;
+        transform: rotate(45deg);
+        z-index: 10;
+        transition: all 0.05s ease;
+    }
+
+    .coffee-bean::before {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 15px;
+        background-color: #3e2723;
+        border-radius: 50%;
+        top: 7.5px;
+        left: 5px;
+    }
+
+    .coffee-cup {
+        width: 60px;
+        height: 40px;
+        background-color: #ffffff;
+        border-radius: 0 0 20px 20px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 3px solid #795548;
+        overflow: visible;
+        z-index: 5;
+    }
+
+    .coffee-cup::before {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 15px;
+        background-color: transparent;
+        border: 3px solid #795548;
+        border-radius: 10px;
+        right: -20px;
+        top: 10px;
+    }
+
+    .coffee-cup::after {
+        content: '';
+        position: absolute;
+        width: 50px;
+        height: 10px;
+        background-color: #3e2723;
+        border-radius: 10px 10px 0 0;
+        top: 0px;
+        left: 5px;
+    }
+
+    .splash {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background-color: #3e2723;
+        border-radius: 50%;
+        opacity: 0;
+        z-index: 1;
+    }
+
+    @keyframes splash {
+        0% { transform: scale(0.1); opacity: 0.8; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .btn {
+        background-color: #2563eb;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 30px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        border: 2px solid #60a5fa;
+    }
+
+    .btn:hover {
+        background-color: #1d4ed8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    .modal {
+        background-color: rgba(15, 23, 42, 0.9);
+        backdrop-filter: blur(5px);
+    }
+
+    .code-box {
+        background-color: #1e3a8a;
+        border: 2px dashed #60a5fa;
+        font-family: monospace;
+        letter-spacing: 2px;
+        font-size: 20px;
+        font-weight: bold;
+        color: #ffffff;
+    }
+
+    .steam {
+        position: absolute;
+        width: 8px;
+        height: 20px;
+        background-color: rgba(148, 163, 184, 0.6);
+        border-radius: 10px;
+        top: -20px;
+        opacity: 0;
+    }
+
+    @keyframes steam {
+        0% { transform: translateY(0) scale(1); opacity: 0.7; }
+        100% { transform: translateY(-20px) scale(1.5); opacity: 0; }
+    }
+
+    .swipe-instruction {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: pulse 2s infinite;
+        text-align: center;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.6; transform: translateX(-50%) scale(0.95); }
+        50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+        100% { opacity: 0.6; transform: translateX(-50%) scale(0.95); }
+    }
+
+    .swipe-animation {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .swipe-animation::before {
+        content: '👆';
+        font-size: 30px;
+        position: absolute;
+        top: 0;
+        left: 0;
+        animation: swipe 2s infinite;
+    }
+
+    @keyframes swipe {
+        0% { transform: translate(0, 0); }
+        50% { transform: translate(30px, -20px); }
+        100% { transform: translate(0, 0); }
+    }
+
+    .confetti {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-color: #f00;
+        opacity: 0.8;
+        z-index: 100;
+        top: -20px;
+    }
+
+    @keyframes fall {
+        0% { transform: translateY(0) rotate(0deg); }
+        100% { transform: translateY(500px) rotate(360deg); }
+    }
+
+    .trajectory-line {
+        position: absolute;
+        height: 2px;
+        background-color: rgba(255, 255, 255, 0.7);
+        transform-origin: bottom left;
+        bottom: 20px;
+        left: 50%;
+        z-index: 5;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .version-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #1e3a8a;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 20;
+    }
+
+    .precision-badge {
+        position: absolute;
+        top: 40px;
+        right: 10px;
+        background-color: #15803d;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 20;
+    }
+</style>
+<!-- Décoration de fond -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-5">
+    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+            <pattern id="coffee-pattern" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="0.8" fill="#60a5fa" opacity="0.1" />
+            </pattern>
+        </defs>
+        <rect x="0" y="0" width="100%" height="100%" fill="url(#coffee-pattern)" />
+    </svg>
+</div>
+
+<h1 class="title text-4xl md:text-5xl text-center text-blue-300 mb-4">Café Cible</h1>
+<p class="text-center text-blue-300 mb-8">Faites glisser pour lancer les grains!</p>
+
+<div class="relative w-full max-w-lg h-[500px] bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg overflow-hidden border-4 border-blue-500">
+    <!-- Badge de version -->
+    <div class="version-badge">Version 5</div>
+    
+    <!-- Badge de précision -->
+    <div class="precision-badge">Précision Élevée</div>
+    
+    <!-- Zone de jeu -->
+    <div id="game-area" class="relative w-full h-full">
+        <div id="coffee-cup" class="coffee-cup"></div>
+        
+        <!-- Ligne de trajectoire -->
+        <div id="trajectory-line" class="trajectory-line"></div>
+        
+        <!-- Informations du jeu -->
+        <div class="absolute top-4 left-0 w-full flex justify-between px-4">
+            <div class="bg-blue-800 p-2 rounded-lg shadow-md border border-blue-500">
+                <span class="font-bold text-blue-200">Score: </span>
+                <span id="score" class="text-blue-200">0</span>
+                <span class="text-blue-200">/10</span>
+            </div>
+            <div class="bg-blue-800 p-2 rounded-lg shadow-md border border-blue-500">
+                <span class="font-bold text-blue-200">Temps: </span>
+                <span id="timer" class="text-blue-200">30</span>
+                <span class="text-blue-200">s</span>
+            </div>
+        </div>
+        
+        <!-- Instruction de swipe -->
+        <div class="swipe-instruction text-blue-200">
+            <div class="swipe-animation"></div>
+            <p>Glissez pour lancer</p>
+        </div>
+        
+        <!-- Conteneur pour les confettis -->
+        <div id="confetti-container"></div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="mt-6 text-center text-blue-300 max-w-md">
+    <p>Marquez 10 points en 30 secondes pour gagner un code Matipay!</p>
+</div>
+
+<!-- Modal de début -->
+<div id="start-modal" class="modal fixed inset-0 flex items-center justify-center z-50">
+    <div class="bg-blue-900 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-blue-500">
+        <h2 class="title text-3xl text-center text-blue-300 mb-4">Café Cible</h2>
+        <p class="text-center text-blue-300 mb-6">Lancez les grains de café dans la tasse mobile pour gagner!</p>
+        <div class="space-y-4 mb-6">
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">1</div>
+                <p class="text-blue-200">Glissez pour viser et lancer un grain</p>
+            </div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">2</div>
+                <p class="text-blue-200">Marquez 10 points en 30 secondes</p>
+            </div>
+            <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">3</div>
+                <p class="text-blue-200">Précision améliorée: visez avec confiance!</p>
+            </div>
+        </div>
+        <button id="start-btn" class="btn w-full">Commencer</button>
+    </div>
+</div>
+
+<!-- Modal de fin -->
+<div id="end-modal" class="modal fixed inset-0 flex items-center justify-center z-50 hidden">
+    <div class="bg-blue-900 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl border-4 border-blue-500">
+        <h2 id="result-title" class="title text-3xl text-center text-blue-300 mb-4">Partie terminée!</h2>
+        <p id="result-message" class="text-center text-blue-300 mb-6">Vous avez marqué <span id="final-score">0</span> points.</p>
+        
+        <div id="code-container" class="hidden">
+            <p class="text-center text-blue-300 mb-2">Votre code Matipay:</p>
+            <div class="code-box p-4 rounded-lg text-center mb-6">
+                <span id="promo-code">CODE123</span>
+            </div>
+            <p class="text-xs text-center text-blue-200 mb-6">Utilisez ce code dans l'application Matipay pour voir si vous avez gagné!</p>
+        </div>
+        
+        <button id="replay-btn" class="btn w-full">Rejouer</button>
+    </div>
+</div>
+
+<script>
+    // Codes promotionnels
+    const promoCodes = [
+        "CAFE2023", "EXPRESSO45", "MATILATTE", "PAYMOCHA22", 
+        "CAPPUCCINO7", "ARABICA365", "ROBUSTA123", "MATIBEAN55", 
+        "PAYCOFFEE8", "HOTDRINK99", "CAFENOIR21", "MATIPAY777", 
+        "COFFEETIME", "BEANMASTER", "PAYEXPRESS", "MATIDRINK5", 
+        "LATTEART23", "COFFEELOVE", "BARISTAWIN", "PAYDELUXE7"
+    ];
+
+    // Couleurs pour les confettis
+    const confettiColors = [
+        "#ff0000", "#00ff00", "#0000ff", "#ffff00", 
+        "#ff00ff", "#00ffff", "#ff8000", "#8000ff",
+        "#ff0080", "#80ff00", "#0080ff", "#ff8080"
+    ];
+
+    // Éléments du DOM
+    const gameArea = document.getElementById('game-area');
+    const coffeeCup = document.getElementById('coffee-cup');
+    const scoreElement = document.getElementById('score');
+    const timerElement = document.getElementById('timer');
+    const startModal = document.getElementById('start-modal');
+    const startBtn = document.getElementById('start-btn');
+    const endModal = document.getElementById('end-modal');
+    const replayBtn = document.getElementById('replay-btn');
+    const resultTitle = document.getElementById('result-title');
+    const resultMessage = document.getElementById('result-message');
+    const finalScore = document.getElementById('final-score');
+    const codeContainer = document.getElementById('code-container');
+    const promoCode = document.getElementById('promo-code');
+    const swipeInstruction = document.querySelector('.swipe-instruction');
+    const confettiContainer = document.getElementById('confetti-container');
+    const trajectoryLine = document.getElementById('trajectory-line');
+
+    // Variables du jeu
+    let score = 0;
+    let timeLeft = 30;
+    let gameActive = false;
+    let cupDirection = 1;
+    let cupSpeed = 1.5; // Vitesse réduite
+    let cupPosition = 50;
+    let gameTimer;
+    let cupTimer;
+    let lastThrowTime = 0;
+    const throwCooldown = 300; // Temps minimum entre les lancers en ms
+
+    // Variables pour le swipe
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+    let currentX = 0;
+    let currentY = 0;
+
+    // Initialisation du jeu
+    function initGame() {
+        score = 0;
+        timeLeft = 30;
+        scoreElement.textContent = score;
+        timerElement.textContent = timeLeft;
+        gameActive = true;
+        
+        // Afficher l'instruction de swipe
+        swipeInstruction.style.display = 'block';
+        
+        // Démarrer le mouvement de la tasse
+        moveCup();
+        
+        // Démarrer le chronomètre
+        gameTimer = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+    }
+
+    // Mouvement de la tasse
+    function moveCup() {
+        // Réinitialiser la position de la tasse au centre
+        coffeeCup.style.left = '50%';
+        coffeeCup.style.transform = 'translate(-50%, -50%)';
+        
+        cupTimer = setInterval(() => {
+            if (!gameActive) return;
+            
+            cupPosition += cupSpeed * cupDirection;
+            
+            // Rebondir sur les bords
+            if (cupPosition > 80 || cupPosition < 20) {
+                cupDirection *= -1;
+            }
+            
+            coffeeCup.style.left = `${cupPosition}%`;
+        }, 30);
+    }
+
+    // Lancer un grain de café avec swipe
+    function throwCoffeeBeanWithSwipe(velocityX, velocityY) {
+        if (!gameActive) return;
+        
+        // Limiter la fréquence des lancers
+        const now = Date.now();
+        if (now - lastThrowTime < throwCooldown) return;
+        lastThrowTime = now;
+        
+        // Masquer l'instruction après le premier lancer
+        swipeInstruction.style.display = 'none';
+        
+        const bean = document.createElement('div');
+        bean.className = 'coffee-bean';
+        
+        // Position initiale du grain (en bas de l'écran)
+        bean.style.bottom = '20px';
+        bean.style.left = '50%';
+        
+        gameArea.appendChild(bean);
+        
+        // Ajouter une très légère imprécision (beaucoup plus précis qu'avant)
+        const imprecisionX = (Math.random() - 0.5) * 0.005; // ±0.0025 (5x plus précis)
+        const imprecisionY = (Math.random() - 0.5) * 0.005; // ±0.0025 (5x plus précis)
+        
+        // Animation du lancer
+        let positionX = 50;
+        let height = 20;
+        let vx = velocityX + imprecisionX;
+        let vy = velocityY + imprecisionY;
+        const gravity = 0.8;
+        
+        const throwInterval = setInterval(() => {
+            height += vy;
+            vy -= gravity;
+            positionX += vx;
+            
+            // Si le grain atteint le sol ou sort de l'écran
+            if (height < 0 || height > gameArea.clientHeight || positionX < 0 || positionX > 100) {
+                clearInterval(throwInterval);
+                if (bean.parentNode) {
+                    bean.parentNode.removeChild(bean);
+                }
+                return;
+            }
+            
+            bean.style.bottom = `${height}px`;
+            bean.style.left = `${positionX}%`;
+            
+            // Vérifier la collision avec la tasse
+            checkCollision(bean, height, positionX);
+            
+        }, 20);
+    }
+
+    // Vérifier la collision avec la tasse
+    function checkCollision(bean, beanHeight, beanPosition) {
+        const cupRect = coffeeCup.getBoundingClientRect();
+        const gameRect = gameArea.getBoundingClientRect();
+        
+        // Convertir la position du grain en pixels
+        const beanX = (beanPosition / 100) * gameRect.width;
+        const beanY = gameRect.height - beanHeight;
+        
+        // Position de la tasse en pixels
+        const cupTop = cupRect.top - gameRect.top;
+        const cupBottom = cupRect.bottom - gameRect.top;
+        const cupLeft = cupRect.left - gameRect.left;
+        const cupRight = cupRect.right - gameRect.left;
+        
+        // Vérifier si le grain est dans la tasse
+        if (beanY >= cupTop && beanY <= cupBottom && 
+            beanX >= cupLeft && beanX <= cupRight) {
+            // Collision détectée!
+            score++;
+            scoreElement.textContent = score;
+            
+            // Effet de splash
+            createSplash(cupPosition);
+            
+            // Effet de vapeur
+            createSteam();
+            
+            // Supprimer le grain
+            if (bean.parentNode) {
+                bean.parentNode.removeChild(bean);
+            }
+            
+            // Vérifier si le joueur a gagné
+            if (score >= 10 && gameActive) {
+                endGame();
+            }
+        }
+    }
+
+    // Créer un effet de splash
+    function createSplash(position) {
+        const splash = document.createElement('div');
+        splash.className = 'splash';
+        
+        // Positionner le splash au centre de la tasse
+        const cupRect = coffeeCup.getBoundingClientRect();
+        const gameRect = gameArea.getBoundingClientRect();
+        
+        splash.style.top = `${cupRect.top - gameRect.top + 10}px`;
+        splash.style.left = `${cupRect.left - gameRect.left + cupRect.width/2}px`;
+        
+        gameArea.appendChild(splash);
+        
+        splash.style.animation = 'splash 0.5s ease-out forwards';
+        
+        setTimeout(() => {
+            if (splash.parentNode) {
+                splash.parentNode.removeChild(splash);
+            }
+        }, 500);
+    }
+
+    // Créer un effet de vapeur
+    function createSteam() {
+        const cupRect = coffeeCup.getBoundingClientRect();
+        const gameRect = gameArea.getBoundingClientRect();
+        
+        for (let i = 0; i < 3; i++) {
+            const steam = document.createElement('div');
+            steam.className = 'steam';
+            
+            // Position aléatoire au-dessus de la tasse
+            const offset = Math.random() * 40 - 20;
+            steam.style.top = `${cupRect.top - gameRect.top - 10}px`;
+            steam.style.left = `${cupRect.left - gameRect.left + cupRect.width/2 + offset}px`;
+            
+            gameArea.appendChild(steam);
+            
+            // Animation avec délai
+            setTimeout(() => {
+                steam.style.opacity = '0.7';
+                steam.style.animation = `steam ${0.8 + Math.random() * 0.5}s ease-out forwards`;
+            }, i * 100);
+            
+            setTimeout(() => {
+                if (steam.parentNode) {
+                    steam.parentNode.removeChild(steam);
+                }
+            }, 1000);
+        }
+    }
+
+    // Créer des confettis
+    function createConfetti() {
+        // Vider le conteneur de confettis
+        confettiContainer.innerHTML = '';
+        
+        // Créer 100 confettis
+        for (let i = 0; i < 100; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                
+                // Position aléatoire en haut de l'écran
+                const posX = Math.random() * 100;
+                confetti.style.left = `${posX}%`;
+                
+                // Taille aléatoire
+                const size = Math.random() * 10 + 5;
+                confetti.style.width = `${size}px`;
+                confetti.style.height = `${size}px`;
+                
+                // Forme aléatoire (carré ou rond)
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                
+                // Couleur aléatoire
+                const colorIndex = Math.floor(Math.random() * confettiColors.length);
+                confetti.style.backgroundColor = confettiColors[colorIndex];
+                
+                // Animation
+                const duration = Math.random() * 3 + 2;
+                const delay = Math.random() * 0.5;
+                confetti.style.animation = `fall ${duration}s ease-in ${delay}s forwards`;
+                
+                confettiContainer.appendChild(confetti);
+                
+                // Supprimer après l'animation
+                setTimeout(() => {
+                    if (confetti.parentNode) {
+                        confetti.parentNode.removeChild(confetti);
+                    }
+                }, (duration + delay) * 1000);
+            }, i * 20); // Échelonner la création des confettis
+        }
+    }
+
+    // Mettre à jour la ligne de trajectoire
+    function updateTrajectoryLine(endX, endY) {
+        const gameRect = gameArea.getBoundingClientRect();
+        const startX = gameRect.width / 2;
+        const startY = gameRect.height - 20;
+        
+        // Calculer la longueur et l'angle de la ligne
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const length = Math.min(Math.sqrt(dx * dx + dy * dy), 100);
+        const angle = Math.atan2(-dy, dx) * 180 / Math.PI;
+        
+        // Mettre à jour la ligne
+        trajectoryLine.style.width = `${length}px`;
+        trajectoryLine.style.transform = `rotate(${angle}deg)`;
+        trajectoryLine.style.opacity = '1';
+    }
+
+    // Fin du jeu
+    function endGame() {
+        gameActive = false;
+        clearInterval(gameTimer);
+        clearInterval(cupTimer);
+        
+        finalScore.textContent = score;
+        
+        if (score >= 10) {
+            resultTitle.textContent = "Félicitations!";
+            resultMessage.textContent = `Vous avez marqué ${score} points et gagné un code!`;
+            codeContainer.classList.remove('hidden');
+            
+            // Sélectionner un code aléatoire
+            const randomCode = promoCodes[Math.floor(Math.random() * promoCodes.length)];
+            promoCode.textContent = randomCode;
+            
+            // Lancer les confettis
+            createConfetti();
+        } else {
+            resultTitle.textContent = "Partie terminée!";
+            resultMessage.textContent = `Vous avez marqué ${score} points. Il vous fallait 10 points pour gagner.`;
+            codeContainer.classList.add('hidden');
+        }
+        
+        endModal.classList.remove('hidden');
+    }
+
+    // Événements pour le swipe
+    gameArea.addEventListener('mousedown', function(e) {
+        if (!gameActive) return;
+        
+        const gameRect = gameArea.getBoundingClientRect();
+        startX = e.clientX - gameRect.left;
+        startY = e.clientY - gameRect.top;
+        isDragging = true;
+        currentX = startX;
+        currentY = startY;
+        
+        // Afficher la ligne de trajectoire
+        trajectoryLine.style.opacity = '1';
+    });
+
+    gameArea.addEventListener('mousemove', function(e) {
+        if (!isDragging || !gameActive) return;
+        
+        const gameRect = gameArea.getBoundingClientRect();
+        currentX = e.clientX - gameRect.left;
+        currentY = e.clientY - gameRect.top;
+        
+        // Mettre à jour la ligne de trajectoire
+        updateTrajectoryLine(currentX, currentY);
+    });
+
+    gameArea.addEventListener('mouseup', function(e) {
+        if (!isDragging || !gameActive) return;
+        
+        const gameRect = gameArea.getBoundingClientRect();
+        const endX = e.clientX - gameRect.left;
+        const endY = e.clientY - gameRect.top;
+        
+        // Calculer la vélocité du swipe
+        const dx = startX - endX;
+        const dy = startY - endY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Seulement lancer si le swipe est assez long
+        if (distance > 20) {
+            // Normaliser et ajuster la force
+            const velocityX = dx / distance * 0.05;
+            const velocityY = dy / distance * 0.15;
+            
+            throwCoffeeBeanWithSwipe(velocityX, velocityY);
+        }
+        
+        isDragging = false;
+        
+        // Masquer la ligne de trajectoire
+        trajectoryLine.style.opacity = '0';
+    });
+
+    // Support tactile
+    gameArea.addEventListener('touchstart', function(e) {
+        e.preventDefault(); // Empêcher le zoom sur mobile
+        if (!gameActive) return;
+        
+        const touch = e.touches[0];
+        const gameRect = gameArea.getBoundingClientRect();
+        startX = touch.clientX - gameRect.left;
+        startY = touch.clientY - gameRect.top;
+        isDragging = true;
+        currentX = startX;
+        currentY = startY;
+        
+        // Afficher la ligne de trajectoire
+        trajectoryLine.style.opacity = '1';
+    });
+
+    gameArea.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+        if (!isDragging || !gameActive) return;
+        
+        const touch = e.touches[0];
+        const gameRect = gameArea.getBoundingClientRect();
+        currentX = touch.clientX - gameRect.left;
+        currentY = touch.clientY - gameRect.top;
+        
+        // Mettre à jour la ligne de trajectoire
+        updateTrajectoryLine(currentX, currentY);
+    });
+
+    gameArea.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        if (!isDragging || !gameActive) return;
+        
+        // Calculer la vélocité du swipe
+        const dx = startX - currentX;
+        const dy = startY - currentY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Seulement lancer si le swipe est assez long
+        if (distance > 20) {
+            // Normaliser et ajuster la force
+            const velocityX = dx / distance * 0.05;
+            const velocityY = dy / distance * 0.15;
+            
+            throwCoffeeBeanWithSwipe(velocityX, velocityY);
+        }
+        
+        isDragging = false;
+        
+        // Masquer la ligne de trajectoire
+        trajectoryLine.style.opacity = '0';
+    });
+    
+    // Événements pour les boutons
+    startBtn.addEventListener('click', () => {
+        startModal.classList.add('hidden');
+        initGame();
+    });
+    
+    replayBtn.addEventListener('click', () => {
+        endModal.classList.add('hidden');
+        initGame();
+    });
+</script>
